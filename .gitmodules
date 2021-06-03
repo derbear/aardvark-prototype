@@ -1,8 +1,9 @@
+[submodule "edrax"]
+	path = edrax
+	url = https://github.com/derbear/edrax-vcs.git
 [submodule "pairing-fork"]
 	path = pairing-fork
-	url = git@github.com:algorand/pairing-plus.git
-	branch = ndss-2020
+	url = https://github.com/algorand/pairing-plus.git
 [submodule "veccom-rust"]
 	path = veccom-rust
-	url = git@github.com:algorand/pointproofs.git
-	branch = ndss-2020
+	url = https://github.com/derbear/pointproofs.git

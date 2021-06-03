@@ -12,9 +12,13 @@ $ cd veccom-rust
 $ cargo build --release
 $ go test -v
 ```
-The last test command should pass if setup went correctly.
+The last test command should pass if setup succeeded.
 
 Afterwards, go to `go-algorand` and follow the installation instructions there.
+
+### go-algorand
+
+You will need to build libsodium.  The most straightforward way is to install `autoconf`, `automake`, and `libtool` for your system and then run `cd go-algorand; make`.
 
 ## Benchmarks
 
