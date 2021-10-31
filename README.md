@@ -2,30 +2,48 @@
 
 The artifact is an implementation and empirical evaluation of Aardvark, an authenticated dictionary. 
 
-The artifact contains two sets of benchmarks for evaluation in the paper.  First, it contains microbenchmarks of vector commitment opearations which compare those used in the paper with those in EDRAX (a related system), and with a basic Merkle Tree.  Second, it contains a benchmark of the dictionary operations themselves from the perspective of both a validator and an archive, with the dictionary is integrated into the backend of the Algorand cryptocurrency.  The objective of these benchmarks is to substantiate the paper's claims of computational efficiency, which is difficult to analytically evaluate.  In particular, these benchmarks measure the latency of key vector commitment and dictionary operations.
+The artifact contains two sets of benchmarks for evaluation in the paper.  First, it contains microbenchmarks of vector commitment operations which compare those used in the paper with those in EDRAX (a related system), and with a basic Merkle Tree.  Second, it contains a benchmark of the dictionary operations themselves from the perspective of both a validator and an archive, with the dictionary integrated into the backend of the Algorand cryptocurrency.  The objective of these benchmarks is to substantiate the paper's claims of computational efficiency, which is difficult to analytically evaluate.  In particular, these benchmarks measure the latency of key vector commitment and dictionary operations.
 
-The artifact may be validated by downloading it from the public GitHub repository URL provided and running the evaluation scripts, which are part of the repository.  The expected result of evaluating the artifact is that the latencies match those in the paper.
+The artifact may be validated by downloading it from the public GitHub repository URL provided and running the evaluation scripts, which are part of the repository.  The expected result of artifact evaluation is that the latency measurements match those in the paper.
 
 
 # Hardware dependencies
 
-To reproduce results regarding the authenticated dictionary's scalability, 32 cores are required.  The provided benchmarking script in the repository assumes the presence of 64 cores.
+To reproduce results regarding the authenticated dictionary's scalability, 32 cores are required.  The provided benchmarking script in the repository assumes the presence of at least 64 cores.
 
 Around 110MB of disk space is required to clone the entire git repository.  Around 1GB of disk space is required to run the experiments.
 
 # Software dependencies
 
-Building the software depends on the compilers g++ 9.3.0, rustc nightly-2021-05-25, and go 1.16.4; on the libgmp3 library; and on the build tools cmake, make, autoconf, automake, and libtool.  Running benchmarks depends on numactl.
+Building the software depends on the compilers `g++ 9.3.0`, `rustc nightly-2021-05-25`, and `go 1.16.4`; on the `libgmp3` library; and on the build tools `cmake`, `make`, `autoconf`, `automake`, and `libtool`.  Running benchmarks depends on `numactl`.
 
 # Installation
 
-The following instructions assume that your working directory is $TOP and that you are running Ubuntu 18.04 or 20.04.
+The following instructions assume that your working directory is `$TOP` and that you are running Ubuntu 18.04 or 20.04.  (Older versions of Ubuntu may require modifying these steps.)
 
 ## Obtaining the source code
 
 ```
 git clone --recurse-submodules \
 https://github.com/derbear/aardvark-prototype.git
+```
+
+Note that the top-level git repository contains the authenticated dictionary itself, while the vector commitment dependencies and EDRAX reside in three submodules corresponding to the three directories `edrax`, `veccom-rust`, and `pairing-fork`.  The `--recurse-submodules` option initializes the repositories to their correct versions.  The commits corresponding to the USENIX Security 2022 version of the artifact for the top-level repository, `veccom-rust`, and `edrax` are all additionally given the `usenix22-artifact` `git tag`.
+
+If you did not supply the `--recurse-submodules` option above, you can alternatively initialize these submodules by running the following command from `$TOP/aardvark-prototype`.
+
+```
+git submodule update --init --recursive
+```
+
+To confirm that the versions of all submodules are correct, run `git submodule status --recursive` from `$TOP/aardvark-prototype`, which should produce the following hashes.
+
+```
+ 1f1a3748d1530da1e75fadbce987ee6e6fa3fd1d edrax (usenix22-artifact)
+ 530223d7502e95f6141be19addf1e24d27a14d50 edrax/ate-pairing (v1.2-77-g530223d)
+ a34850b2df66a186c8d947b4d72acc839926321f edrax/xbyak (v3.71-712-ga34850b)
+ cff079d3f78daa48d25183292960c21da9cdf152 pairing-fork (0.14.0-59-gcff079d)
+ d72ed3c8b0e4624053360591fcc8d03ce720ae90 veccom-rust (usenix22-artifact)
 ```
 
 ## Installing dependencies for EDRAX
@@ -71,6 +89,7 @@ tar -C $TOP -xzf go1.16.4.linux-amd64.tar.gz
 
 # add to shell profile for this to be persistent
 export PATH=$PATH:$TOP/go/bin
+export GOPATH=$TOP/go
 
 cd $TOP/aardvark-prototype/veccom-rust ; 
 cargo build --release
@@ -80,7 +99,7 @@ cd $TOP/aardvark-prototype/go-algorand ; make
 
 # Experiment workflow
 
-The following instructions assume that your working directory is $TOP.
+The following instructions assume that your working directory is `$TOP`.
 
 ## EDRAX microbenchmark
 
@@ -88,11 +107,11 @@ The EDRAX binary resulting from compiling calls into the EDRAX implementation.  
 
 ## Aardvark vector commitment microbenchmark
 
-The binary resulting from compiling `veccom-rust/src/bin/run\_aardvark\_bench.rs` calls into the implementation of vector commitments for Aardvark, as well as an implementation of a Merkle Tree.  It executes 100 iterations to warm up the machine state and then performs the passed-in number of measurements of the operations described in Section 4.1.  The script `edrax/bench.sh` invokes the binary with the argument corresponding to vectors with size 1024 and with 1000 iterations, and it writes the results as a CSV file to the file `bench-results.txt` to the current directory.
+The binary resulting from compiling `veccom-rust/src/bin/run_aardvark_bench.rs` calls into the implementation of vector commitments for Aardvark, as well as an implementation of a Merkle Tree.  It executes 100 iterations to warm up the machine state and then performs the passed-in number of measurements of the operations described in Section 4.1.  The script `veccom-rust/bench.sh` invokes the binary with the argument corresponding to vectors with size 1024 and with 1000 iterations, and it writes the results as a CSV file to the file `bench-results.txt` to the current directory.
 
 ## Aardvark dictionary benchmark
 
-Aardvark is implemented as a modification of the database of the Algorand cryptocurrency and is contained inside the repository under the subdirectory `go-algorand/ledger`.  The benchmark itself is written as a Go test within the file `perf\_test.go`, and it consists of a workload generation program (written as a Go test `TestWorkloadGen` for convenience), as well as timed benchmarks (written as a Go test `TestTimeWorkload`).
+Aardvark is implemented as a modification of the database of the Algorand cryptocurrency and is contained inside the repository under the subdirectory `go-algorand/ledger`.  The benchmark itself is written as a Go test within the file `perf_test.go`, and it consists of a workload generation program (written as a Go test `TestWorkloadGen` for convenience), as well as timed benchmarks (written as a Go test `TestTimeWorkload`).
 
 To generate the workload (which takes roughly 5 hours on the paper hardware), run the following:
 ```
@@ -100,6 +119,8 @@ cd $TOP/aardvark-prototype/go-algorand/ledger ;
 ./bench.sh
 ```
 This will create in the `ledger` subdirectory the files `workload-{init-}{c,d,m}`, which correspond to the initialization data and sample load transactions for creation, deletion, and modification benchmarks, respectively.  Once the workloads are created, the benchmarks may be run against them.
+
+Note that if you are executing these commands over an SSH connection, a dropped connection will terminate the generation process, and you will need to reissue the command from the beginning.  We suggest using commands such as `nohup`, `screen`, or `tmux` to prevent a dropped connection from interrupting the command.
 
 # Evaluation and expected results
 
@@ -109,10 +130,10 @@ The security of Aardvark is justified through a paper proof.  The evaluation con
 
 The paper obtains the following empirical results in the evaluation.
   1. While Aardvark's vector commitments are more computationally intensive than Merkle trees, their costs are similar to those in EDRAX without use of a SNARK.
-  2. A 32-core Aardvark validator can process 1--3 thousand operations per second.  Validator costs benefit from parallelization.
+  2. A 32-core Aardvark validator can process from 1 to 3 thousand operations per second.  Validator costs benefit from parallelization.
   3. Costs for archives are reasonable: each core can process about 10 deletion operations per second or 20 modification/insertion operations per second.
 
-The following instructions assume that your working directory is $TOP.
+The following instructions assume that your working directory is `$TOP`.
 
 ## Microbenchmarks
 
@@ -125,7 +146,7 @@ cd $TOP/aardvark-prototype/edrax ; ./bench.sh
 
 # benchmark vector commitments latency
 cd $TOP/aardvark-prototype/veccom-rust ; ./bench.sh
-# time ./bench.sh takes <3min on paper's hardware
+# time ./bench.sh takes <3mins on paper's hardware
 ```
 The output results for EDRAX are in `edrax/bench.csv`, while the expected raw results in the paper are in `edrax/results`.
 The output results for the vector commitments are in `veccom-rust/bench-results.txt`, while the expected raw results in the paper are in `veccom-rust/bench-results`.
@@ -140,18 +161,20 @@ The paper claims in concrete latency measurements for insertion, modification, a
 # runs 3 scaling tests on validators
 cd $TOP/aardvark-prototype/go-algorand/ledger ; 
 ./cores.sh
-# time ./cores.sh takes <4hr on paper's hardware
+# time ./cores.sh takes <4hrs on paper's hardware
 
 # runs 3 tests on archives
 cd $TOP/aardvark-prototype/go-algorand/ledger ; 
 ./acores.sh
-# time ./acores.sh takes <4hr on paper's hardware
+# time ./acores.sh takes <4hrs on paper's hardware
 ```
-The results for validators are in files named `outN.txt`, where N is the number of cores and is either 1, 2, 4, 8, 16, or 32, while the results for archives are in a file named `aout.txt`.  By default, both of these tests run 3 trials each.
+The results for validators are in files named `outN.txt`, where N is the number of cores and is either 1, 2, 4, 8, 16, or 32, while the results for archives are in a file named `aout1.txt`.  By default, both of these tests run 3 trials each.
 Expected raw values for these results for 10 total trials each, manually merged, are in `go-algorand/ledger/validators.csv` and `go-algorand/ledger/archives.csv` respectively.
+
+Note that if you are executing these commands over an SSH connection, a dropped connection will terminate the experiment process, and you will need to reissue the command from the beginning.  We suggest using commands such as `nohup`, `screen`, or `tmux` to prevent a dropped connection from interrupting the command.
 
 # Experiment customization
 
 Different vector sizes may be passed to the vector commitments libraries by modifying the command-line arguments which the `bench.sh` files pass to the binaries.
 
-Modifying `go-algorand/ledger/perf\_test.go` will allow modifying the number of initial accounts, the number of load transactions, the number of blocks, and other parameters input to Aardvark.  (Modifying any variables here will require regeneration of the workload.)
+Modifying `go-algorand/ledger/perf_test.go` will allow modifying the number of initial accounts, the number of load transactions, the number of blocks, and other parameters input to Aardvark.  (Modifying any variables here will require regeneration of the workload.)
